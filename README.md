@@ -8,7 +8,7 @@ AI RSS 뉴스 피드를 위한 Next.js 기반 프론트엔드 애플리케이션
 - **언어**: TypeScript (strict mode)
 - **스타일링**: Tailwind CSS v4
 - **패키지 매니저**: pnpm
-- **Node.js**: 22.x LTS
+- **Node.js**: 22.18.0 LTS
 
 ## 🏗️ 프로젝트 구조
 
