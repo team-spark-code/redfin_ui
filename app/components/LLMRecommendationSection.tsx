@@ -1,146 +1,228 @@
-import { useState } from "react";
+"use client";
+
+import { useRef, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
 import { Separator } from "./ui/separator";
-import { 
-  Search, 
-  Sparkles, 
-  ExternalLink, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Facebook, 
-  Twitter, 
-  Linkedin, 
-  Mail, 
+import {
+  Search,
+  Sparkles,
+  ExternalLink,
+  ThumbsUp,
+  ThumbsDown,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Mail,
   Share2,
   Clock,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 
 interface LLMRecommendationSectionProps {
   onNewsClick?: (newsId: string) => void;
 }
 
-// 모의 LLM 응답 데이터
-const getMockLLMResponse = (prompt: string) => {
-  const responses: Record<string, any> = {
-    "인공지능": {
-      summary: `인공지능 기술의 최신 동향을 종합 분석해보면, 2025년은 생성형 AI의 실용화가 본격적으로 시작되는 원년으로 평가됩니다. 
+/** 프록시 라우트(동일 출처)로 호출 → CORS 문제 없음 */
+const API_URL = "/api/llm";
 
-특히 차세대 언어 모델의 발표로 자연어 처리 능력이 획기적으로 향상되었으며, 이는 교육, 의료, 금융 등 다양한 산업 분야에서 혁신적인 변화를 이끌고 있습니다. 
-
-주목할 점은 AI 윤리 가이드라인의 수립과 함께 안전하고 신뢰할 수 있는 AI 개발 방향이 제시되고 있다는 것입니다. 국내 스타트업들도 이러한 기술 혁신을 바탕으로 글로벌 시장 진출을 가속화하고 있어, 앞으로의 AI 생태계 발전이 기대됩니다.`,
-      relatedArticles: [
-        { id: "1", title: "인공지능 기술의 새로운 돌파구, 차세대 언어 모델 발표" },
-        { id: "ai-1", title: "AI 윤리 가이드라인 발표, 안전한 AI 개발 방향 제시" },
-        { id: "ai-2", title: "국내 스타트업, AI 기술로 글로벌 시장 진출 가속화" },
-        { id: "ai-3", title: "교육 분야 AI 도입, 개인 맞춤형 학습 시대 열려" },
-        { id: "ai-4", title: "의료 AI 진단 정확도 95% 돌파, 의료진 업무 효율성 증대" }
-      ]
-    },
-    "경제": {
-      summary: `2025년 한국 경제는 글로벌 경제 회복세와 함께 안정적인 성장 궤도에 진입할 것으로 전망됩니다.
-
-주요 증시의 급등세가 지속되며 코스피가 2,600선을 돌파하는 등 투자 심리가 크게 개선되고 있습니다. 특히 반도체 업종의 회복세와 신기술 산업 분야의 지속적인 성장이 경제 성장의 주요 동력으로 작용하고 있습니다.
-
-중앙은행의 안정적인 통화정책 기조와 함께 인플레이션 둔화 현상이 나타나면서 소비심리도 점차 회복되고 있어, 내수 경제 활성화에도 긍정적인 영향을 미칠 것으로 예상됩니다.`,
-      relatedArticles: [
-        { id: "2", title: "경제 전망: 2025년 성장률 예측과 주요 변수들" },
-        { id: "eco-1", title: "주식시장 상승세, 코스피 2,600선 돌파" },
-        { id: "eco-2", title: "반도체 업종 회복세, 글로벌 수요 증가 영향" },
-        { id: "eco-3", title: "소비심리 개선, 내수 경제 활성화 기대" },
-        { id: "eco-4", title: "중앙은행 기준금리 동결, 안정적 통화정책 유지" }
-      ]
-    },
-    "default": {
-      summary: `입력하신 키워드를 바탕으로 관련 뉴스들을 분석한 결과, 현재 국내외에서 주목받고 있는 주요 이슈들과 연관성이 높은 것으로 나타났습니다.
-
-최신 동향을 종합해보면, 기술 혁신과 경제 회복, 그리고 사회적 변화가 동시에 진행되고 있어 다각적인 접근이 필요한 상황입니다. 특히 글로벌 트렌드와 국내 정책 방향이 맞물리면서 새로운 기회와 도전이 공존하고 있습니다.
-
-관련 전문가들은 이러한 변화에 대한 지속적인 모니터링과 분석이 중요하다고 강조하고 있으며, 앞으로의 발전 방향에 대해 긍정적인 전망을 제시하고 있습니다.`,
-      relatedArticles: [
-        { id: "1", title: "인공지능 기술의 새로운 돌파구, 차세대 언어 모델 발표" },
-        { id: "2", title: "경제 전망: 2025년 성장률 예측과 주요 변수들" },
-        { id: "3", title: "환경 보호를 위한 새로운 정책 발표, 탄소 중립 목표 앞당겨" },
-        { id: "5", title: "K-문화의 세계적 확산, 새로운 한류 콘텐츠 주목받아" }
-      ]
-    }
+/** 백엔드 응답 타입 */
+type ApiResponse = {
+  data?: {
+    text?: string;
+    format?: "markdown" | "html" | "text";
+    answer?: {
+      text?: string;
+      bullets?: string[] | null;
+      format?: "markdown" | "html" | "text";
+    };
+    sources?: Array<
+      | string
+      | {
+          id?: string;
+          title?: string;
+          url?: string;
+        }
+    >;
   };
-
-  const key = Object.keys(responses).find(k => prompt.includes(k)) || "default";
-  return responses[key];
+  [k: string]: any;
 };
 
-export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSectionProps) {
+interface UiArticle {
+  id: string;
+  title: string;
+  url?: string;
+}
+
+interface UiLLMResponse {
+  summary: string;
+  format: "markdown" | "html" | "text";
+  bullets: string[] | null;
+  relatedArticles: UiArticle[];
+}
+
+/** 서버 JSON → UI 모델 매핑 */
+function mapApiToUi(json: ApiResponse): UiLLMResponse {
+  const text = json?.data?.text ?? json?.data?.answer?.text ?? "";
+  const format =
+    (json?.data?.format ??
+      json?.data?.answer?.format ??
+      "text") as UiLLMResponse["format"];
+
+  const sources = json?.data?.sources ?? [];
+  const relatedArticles: UiArticle[] = sources.map((s, idx) => {
+    if (typeof s === "string") {
+      // URL이면 호스트/첫 경로를 제목으로
+      try {
+        const u = new URL(s);
+        const host = u.hostname.replace(/^www\./, "");
+        const firstPath = u.pathname.split("/").filter(Boolean)[0] ?? "";
+        const title = firstPath ? `${host} / ${decodeURIComponent(firstPath)}` : host;
+        return { id: `${idx}`, title, url: s };
+      } catch {
+        // 일반 문자열
+        return { id: `${idx}`, title: s, url: s };
+      }
+    }
+    return {
+      id: s.id ?? `${idx}`,
+      title: s.title ?? s.url ?? `출처 ${idx + 1}`,
+      url: s.url,
+    };
+  });
+
+  return {
+    summary: text || "(응답이 비어 있습니다)",
+    format,
+    bullets: json?.data?.answer?.bullets ?? null,
+    relatedArticles,
+  };
+}
+
+export function LLMRecommendationSection({
+  onNewsClick,
+}: LLMRecommendationSectionProps) {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [llmResponse, setLlmResponse] = useState<any>(null);
+  const [llmResponse, setLlmResponse] = useState<UiLLMResponse | null>(null);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
-  const [likeCount, setLikeCount] = useState(42);
-  const [dislikeCount, setDislikeCount] = useState(3);
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
+
+  // 연속 검색 시 이전 요청 취소
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const handleSearch = async () => {
     if (!prompt.trim()) return;
-    
+
+    // 이전 요청 취소 + 새 컨트롤러
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // 타임아웃(선택)
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     setIsLoading(true);
-    // 모의 API 호출 지연
-    setTimeout(() => {
-      const response = getMockLLMResponse(prompt);
-      setLlmResponse(response);
+    setLlmResponse(null);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ question: prompt }),
+        signal: controller.signal,
+      });
+
+      const rawText = await res.text();
+      if (!res.ok) {
+        console.error("API error:", res.status, rawText);
+        throw new Error(`API ${res.status}`);
+      }
+
+      const json: ApiResponse = rawText ? JSON.parse(rawText) : ({} as any);
+      const ui = mapApiToUi(json);
+      setLlmResponse(ui);
+      setLiked(false);
+      setDisliked(false);
+    } catch (err: any) {
+      if (err?.name === "AbortError") return; // 사용자가 취소
+      console.error("요청 실패:", err);
+      setLlmResponse({
+        summary:
+          "요청 처리 중 문제가 발생했습니다. (네트워크/CORS/서버 상태를 확인해주세요)",
+        format: "text",
+        bullets: null,
+        relatedArticles: [],
+      });
+    } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+  // onKeyPress 대신 onKeyDown 권장 (+ 한글 조합 입력 보호)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // @ts-ignore
+    if (e.nativeEvent?.isComposing) return;
+    if (e.key === "Enter") handleSearch();
   };
 
   const handleLike = () => {
     if (disliked) {
       setDisliked(false);
-      setDislikeCount(prev => prev - 1);
+      setDislikeCount((p) => p - 1);
     }
-    setLiked(!liked);
-    setLikeCount(prev => liked ? prev - 1 : prev + 1);
+    setLiked((v) => !v);
+    setLikeCount((p) => (liked ? p - 1 : p + 1));
   };
 
   const handleDislike = () => {
     if (liked) {
       setLiked(false);
-      setLikeCount(prev => prev - 1);
+      setLikeCount((p) => p - 1);
     }
-    setDisliked(!disliked);
-    setDislikeCount(prev => disliked ? prev - 1 : prev + 1);
+    setDisliked((v) => !v);
+    setDislikeCount((p) => (disliked ? p - 1 : p + 1));
   };
 
   const handleShare = (platform: string) => {
+    if (typeof window === "undefined") return;
     const url = window.location.href;
     const title = `LLM 뉴스 분석: ${prompt}`;
-    
+
     const shareUrls = {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${title}\n\n${url}`)}`
-    };
+      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+        url
+      )}&text=${encodeURIComponent(title)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+        url
+      )}`,
+      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(
+        `${title}\n\n${url}`
+      )}`,
+    } as const;
 
-    if (platform === 'email') {
-      window.location.href = shareUrls[platform];
+    if (platform === "email") {
+      window.location.href = shareUrls.email;
     } else {
-      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+      const win = window.open(
+        shareUrls[platform as keyof typeof shareUrls],
+        "_blank",
+        "width=600,height=400"
+      );
+      if (win) (win as any).opener = null;
     }
   };
 
   const handleArticleClick = (articleId: string) => {
-    if (onNewsClick) {
-      onNewsClick(articleId);
-    }
+    onNewsClick?.(articleId);
   };
 
   return (
@@ -166,7 +248,7 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
                 placeholder="분석하고 싶은 주제를 입력하세요 (예: 인공지능, 경제, 환경 등)"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 className="pl-10"
                 disabled={isLoading}
               />
@@ -208,44 +290,67 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
         {/* Results */}
         {llmResponse && !isLoading && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Related Articles */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  관련 기사
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {llmResponse.relatedArticles.map((article: any, index: number) => (
-                    <div
-                      key={article.id}
-                      className="group p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors border border-transparent hover:border-primary/20"
-                      onClick={() => handleArticleClick(article.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Badge variant="outline" className="text-xs flex-shrink-0">
-                          {index + 1}
-                        </Badge>
-                        <div className="flex-1">
-                          <p className="text-sm leading-relaxed group-hover:text-primary transition-colors">
-                            {article.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>관련도 높음</span>
-                            <ExternalLink className="w-3 h-3" />
+            {/* Left – Related Articles */}
+            {llmResponse.relatedArticles.length > 0 && (
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    관련 기사
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {llmResponse.relatedArticles.map((article, index) => (
+                      <div
+                        key={article.id}
+                        className="group p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors border border-transparent hover:border-primary/20"
+                        onClick={() =>
+                          article.url
+                            ? window.open(
+                                article.url,
+                                "_blank",
+                                "noopener,noreferrer"
+                              )
+                            : handleArticleClick(article.id)
+                        }
+                      >
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                            {index + 1}
+                          </Badge>
+                          <div className="flex-1">
+                            <p className="text-sm leading-relaxed group-hover:text-primary transition-colors">
+                              {article.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              <span>출처</span>
+                              {article.url && (
+                                <>
+                                  <span>·</span>
+                                  <a
+                                    href={article.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    원문 <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Right Column - LLM Summary */}
+            {/* Right – LLM Summary */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -257,7 +362,6 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Summary Content */}
                 <div className="prose prose-sm max-w-none">
                   <div className="whitespace-pre-line leading-relaxed">
                     {llmResponse.summary}
@@ -277,7 +381,7 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleShare('facebook')}
+                      onClick={() => handleShare("facebook")}
                       className="h-8 w-8 hover:bg-blue-50 hover:border-blue-200"
                     >
                       <Facebook className="w-4 h-4 text-blue-600" />
@@ -285,7 +389,7 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleShare('twitter')}
+                      onClick={() => handleShare("twitter")}
                       className="h-8 w-8 hover:bg-gray-50 hover:border-gray-200"
                     >
                       <Twitter className="w-4 h-4 text-gray-600" />
@@ -293,7 +397,7 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleShare('linkedin')}
+                      onClick={() => handleShare("linkedin")}
                       className="h-8 w-8 hover:bg-blue-50 hover:border-blue-200"
                     >
                       <Linkedin className="w-4 h-4 text-blue-700" />
@@ -301,7 +405,7 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleShare('email')}
+                      onClick={() => handleShare("email")}
                       className="h-8 w-8 hover:bg-gray-50 hover:border-gray-200"
                     >
                       <Mail className="w-4 h-4 text-gray-600" />

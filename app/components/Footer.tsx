@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
 import { Github, Twitter, Mail, Heart } from "lucide-react";
@@ -34,24 +35,24 @@ export function Footer() {
             <h4>빠른 링크</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
+                <Link href="/" className="text-muted-foreground hover:text-foreground">
                   홈
-                </Button>
+                </Link>
               </li>
               <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
+                <Link href="/search" className="text-muted-foreground hover:text-foreground">
                   뉴스 검색
-                </Button>
+                </Link>
               </li>
               <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
+                <Link href="/categories" className="text-muted-foreground hover:text-foreground">
                   카테고리
-                </Button>
+                </Link>
               </li>
               <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
+                <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
                   분석 대시보드
-                </Button>
+                </Link>
               </li>
             </ul>
           </div>
@@ -60,26 +61,10 @@ export function Footer() {
           <div className="space-y-4">
             <h4>카테고리</h4>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  정치
-                </Button>
-              </li>
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  경제
-                </Button>
-              </li>
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  기술
-                </Button>
-              </li>
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  스포츠
-                </Button>
-              </li>
+              <li><Link href="/category/politics">정치</Link></li>
+              <li><Link href="/category/economy">경제</Link></li>
+              <li><Link href="/category/tech">기술</Link></li>
+              <li><Link href="/category/sports">스포츠</Link></li>
             </ul>
           </div>
 
@@ -87,26 +72,10 @@ export function Footer() {
           <div className="space-y-4">
             <h4>지원</h4>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  도움말
-                </Button>
-              </li>
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  문의하기
-                </Button>
-              </li>
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  개인정보처리방침
-                </Button>
-              </li>
-              <li>
-                <Button variant="link" className="p-0 h-auto text-muted-foreground hover:text-foreground">
-                  이용약관
-                </Button>
-              </li>
+              <li><Link href="/help">도움말</Link></li>
+              <li><Link href="/contact">문의하기</Link></li>
+              <li><Link href="/privacy">개인정보처리방침</Link></li>
+              <li><Link href="/terms">이용약관</Link></li>
             </ul>
           </div>
         </div>
