@@ -40,12 +40,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/search" className="text-muted-foreground hover:text-foreground">
-                  뉴스 검색
+                <Link href="/news" className="text-muted-foreground hover:text-foreground">
+                  전체 뉴스
                 </Link>
               </li>
               <li>
-                <Link href="/categories" className="text-muted-foreground hover:text-foreground">
+                <Link href="/explore" className="text-muted-foreground hover:text-foreground">
                   카테고리
                 </Link>
               </li>
