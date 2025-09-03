@@ -1,7 +1,26 @@
+// app/components/Header.tsx
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
-import { Newspaper, TrendingUp, Settings, LogOut, User, Bell, UserPlus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import {
+  Newspaper,
+  TrendingUp,
+  Settings,
+  LogOut,
+  User,
+  Bell,
+  UserPlus,
+} from "lucide-react";
 import { NewsFilters } from "./NewsFilters";
 
 interface HeaderProps {
@@ -19,8 +38,9 @@ interface HeaderProps {
 const mockUser = {
   name: "김철수",
   email: "kim@example.com",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80",
-  role: "관리자"
+  avatar:
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80",
+  role: "관리자",
 };
 
 export function Header({
@@ -31,8 +51,10 @@ export function Header({
   onRefresh,
   isLoading = false,
   isLoggedIn = true,
-  onSignupClick
+  onSignupClick,
 }: HeaderProps) {
+  const router = useRouter();
+
   const handleLogout = () => {
     console.log("로그아웃");
   };
@@ -45,8 +67,18 @@ export function Header({
     console.log("설정");
   };
 
+  // ✅ 로그인 버튼 → /login 으로 이동
   const handleLogin = () => {
-    console.log("로그인");
+    router.push("/login");
+    // 필요하면 다음처럼 리다이렉트 파라미터도 포함 가능:
+    // const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/";
+    // router.push(`/login?next=${encodeURIComponent(next)}`);
+  };
+
+  // (옵션) 회원가입 핸들러가 안 넘어오면 기본적으로 /signup으로 이동
+  const handleSignup = () => {
+    if (onSignupClick) onSignupClick();
+    else router.push("/signup");
   };
 
   return (
@@ -80,12 +112,19 @@ export function Header({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2 px-2">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                        <AvatarFallback>{mockUser.name.slice(0, 2)}</AvatarFallback>
+                        <AvatarImage
+                          src={mockUser.avatar}
+                          alt={mockUser.name}
+                        />
+                        <AvatarFallback>
+                          {mockUser.name.slice(0, 2)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="text-left">
                         <div className="text-sm">{mockUser.name}</div>
-                        <div className="text-xs text-muted-foreground">{mockUser.role}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {mockUser.role}
+                        </div>
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
@@ -101,7 +140,10 @@ export function Header({
                       <span>설정</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-destructive"
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>로그아웃</span>
                     </DropdownMenuItem>
@@ -113,7 +155,7 @@ export function Header({
                 <Button variant="ghost" onClick={handleLogin}>
                   로그인
                 </Button>
-                <Button onClick={onSignupClick}>
+                <Button onClick={handleSignup}>
                   <UserPlus className="w-4 h-4 mr-2" />
                   회원가입
                 </Button>
