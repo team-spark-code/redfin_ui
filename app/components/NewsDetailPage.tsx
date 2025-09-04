@@ -1,7 +1,9 @@
+// app/components/NewsDetailPage.tsx
 "use client";
 
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -25,61 +27,53 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
-interface NewsRecord {
+export interface NewsRecord {
   _id: string;
   post_id?: string;
   article_id?: string;
   article_code?: string;
   url?: string;
   title: string;
-  dek?: string;          // 상단 요약
-  tldr?: string[];       // 핵심 요약
-  body_md?: string;      // 본문 (Markdown)
+  dek?: string;
+  tldr?: string[];
+  body_md?: string;
   hero_image_url?: string | null;
   author_name?: string | null;
   category?: string;
   categories?: string[];
   tags?: string[];
-  sources?: string[];    // 관련 출처 URL 목록
+  sources?: string[];
   status?: string;
-
-  // 메타/타임스탬프
   created_at?: string;
   published_at?: string;
 }
 
 interface NewsDetailPageProps {
-  article: NewsRecord | undefined; // 런타임 가드 대비
-  onBack: () => void;
+  article: NewsRecord | undefined;
+  onBack: () => void; // 미사용(외부 전파 X), 내부에서 router.back 처리
 }
 
-export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
+export function NewsDetailPage({ article }: NewsDetailPageProps) {
+  const router = useRouter();
+
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [likeCount, setLikeCount] = useState(147);
   const [dislikeCount, setDislikeCount] = useState(8);
 
-  // ------- 유틸 -------
   const formatDate = (dateString?: string) => {
     if (!dateString) return "발행일 정보 없음";
-    const date = new Date(dateString);
+    const date = new Date(dateString.replace(" ", "T"));
     if (isNaN(date.getTime())) return "발행일 정보 없음";
-    return date.toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return date.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   };
 
-  // 초기 로딩/미전달 가드
   if (!article) {
     return (
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-50 bg-card border-b">
           <div className="container mx-auto px-4 py-4">
-            <Button variant="ghost" onClick={onBack} className="mb-4" aria-label="뒤로 가기">
+            <Button variant="ghost" onClick={() => router.back()} className="mb-4" aria-label="뒤로 가기">
               <ArrowLeft className="w-4 h-4 mr-2" />
               뒤로 가기
             </Button>
@@ -92,14 +86,12 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
     );
   }
 
-  // 카테고리 결정: categories[0] → category → "NEWS"
   const primaryCategory = useMemo(() => {
     const cats = article?.categories ?? [];
     const cat = article?.category ?? "";
     return cats.length ? cats[0] : cat || "NEWS";
   }, [article]);
 
-  // 출처 도메인: sources[0] → url → article_id → article_code
   const sourceKey = useMemo(
     () =>
       [
@@ -125,26 +117,26 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
   const author = article?.author_name || "무기명";
   const publishedAt = article?.published_at || article?.created_at;
 
-  // ------- 좋아요/싫어요 -------
+  // 좋아요/싫어요
   const handleLike = () => {
     if (disliked) {
       setDisliked(false);
-      setDislikeCount((prev) => prev - 1);
+      setDislikeCount((prev) => Math.max(0, prev - 1));
     }
     setLiked((prev) => !prev);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+    setLikeCount((prev) => (liked ? Math.max(0, prev - 1) : prev + 1));
   };
 
   const handleDislike = () => {
     if (liked) {
       setLiked(false);
-      setLikeCount((prev) => prev - 1);
+      setLikeCount((prev) => Math.max(0, prev - 1));
     }
     setDisliked((prev) => !prev);
-    setDislikeCount((prev) => (disliked ? prev - 1 : prev + 1));
+    setDislikeCount((prev) => (disliked ? Math.max(0, prev - 1) : prev + 1));
   };
 
-  // ------- 공유 URL (SSR 안전 / 단일 의존성) -------
+  // 공유
   const shareKey = useMemo(() => {
     const currentHref = typeof window !== "undefined" ? window.location.href : "";
     const fallback =
@@ -167,7 +159,9 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
         safeTitle
       )}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(safeUrl)}`,
-      email: `mailto:?subject=${encodeURIComponent(safeTitle)}&body=${encodeURIComponent(`${safeTitle}\n\n${safeUrl}`)}`,
+      email: `mailto:?subject=${encodeURIComponent(safeTitle)}&body=${encodeURIComponent(
+        `${safeTitle}\n\n${safeUrl}`
+      )}`,
     } as const;
   }, [shareKey]);
 
@@ -178,16 +172,20 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
       window.location.href = shareUrls.email;
     } else {
       const w = window.open(shareUrls[platform], "_blank", "width=600,height=400");
-      if (w) w.opener = null; // 보안
+      if (w) w.opener = null;
     }
   };
 
+  // 본문 안전 처리(마크다운 포맷이 아닐 때 줄바꿈만이라도 유지)
+  const body = article.body_md ?? "";
+  const safeBody = /[#*_`>\-]/.test(body) ? body : body.replaceAll("\n", "\n\n");
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header with Back Button */}
+      {/* Header with Back Button (상세에서만 라우팅 제어) */}
       <header className="sticky top-0 z-50 bg-card border-b">
         <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={onBack} className="mb-4" aria-label="뒤로 가기">
+          <Button variant="ghost" onClick={() => router.back()} className="mb-4" aria-label="뒤로 가기">
             <ArrowLeft className="w-4 h-4 mr-2" />
             뒤로 가기
           </Button>
@@ -263,7 +261,7 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
           )}
 
           {/* Article Body (Markdown) */}
-          {article?.body_md ? (
+          {safeBody.trim() ? (
             <div className="prose prose-lg max-w-none space-y-6 leading-relaxed prose-a:underline prose-img:rounded-md dark:prose-invert">
               <ReactMarkdown
                 components={{
@@ -279,7 +277,7 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
                   },
                 }}
               >
-                {article.body_md}
+                {safeBody}
               </ReactMarkdown>
             </div>
           ) : (
@@ -361,7 +359,7 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
             <div className="flex items-center gap-2">
               <Button
                 variant={liked ? "default" : "outline"}
-                onClick={onBack ? handleLike : undefined}
+                onClick={handleLike}
                 className="flex items-center gap-2"
                 aria-pressed={liked}
                 aria-label="좋아요"
@@ -371,7 +369,7 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
               </Button>
               <Button
                 variant={disliked ? "destructive" : "outline"}
-                onClick={onBack ? handleDislike : undefined}
+                onClick={handleDislike}
                 className="flex items-center gap-2"
                 aria-pressed={disliked}
                 aria-label="싫어요"
@@ -384,7 +382,7 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
 
           <Separator className="my-8" />
 
-          {/* Sources(관련 출처) */}
+          {/* Sources */}
           {article?.sources && article.sources.length > 0 && (
             <Card>
               <CardContent className="p-6">
@@ -398,7 +396,9 @@ export function NewsDetailPage({ article, onBack }: NewsDetailPageProps) {
                       let label = src;
                       try {
                         const u = new URL(src);
-                        label = `${u.hostname.replace(/^www\./, "")} / ${decodeURIComponent(u.pathname).slice(1) || ""}`;
+                        label = `${u.hostname.replace(/^www\./, "")} / ${
+                          decodeURIComponent(u.pathname).slice(1) || ""
+                        }`;
                       } catch {
                         // 원본 문자열 유지
                       }

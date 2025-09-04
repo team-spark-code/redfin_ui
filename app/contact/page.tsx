@@ -1,11 +1,45 @@
 "use client";
 
+import { useState } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { Button } from "../components/ui/button";
 import { Separator } from "../components/ui/separator";
 
 export default function ContactPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<null | { type: "success" | "error"; text: string }>(null);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNotice(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "전송에 실패했습니다.");
+      }
+
+      setNotice({ type: "success", text: "메일이 전송되었습니다. 빠르게 답변드리겠습니다." });
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err: any) {
+      setNotice({ type: "error", text: err.message || "오류가 발생했습니다." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -26,7 +60,7 @@ export default function ContactPage() {
           <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <h3 className="text-lg font-semibold">연락처</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              업무 시간: 평일 10:00 ~ 18:00 (공휴일 제외)
+              업무 시간: 평일 09:00 ~ 18:00 (공휴일 제외)
             </p>
             <div className="mt-6 space-y-2 text-sm">
               <div>
@@ -35,7 +69,7 @@ export default function ContactPage() {
                   support@newscrawler.com
                 </a>
               </div>
-              <div>📍 서울특별시 어딘가 123</div>
+              <div>📍 경기도 수원시 팔달구 인계동 번지 신관 3층 208-5 KR 풍림빌딩</div>
             </div>
 
             <Separator className="my-6" />
@@ -45,37 +79,69 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* 간단 폼 (동작 없이 스타일만) */}
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="rounded-2xl border bg-card p-6 shadow-sm"
-          >
+          {/* 폼 */}
+          <form onSubmit={onSubmit} className="rounded-2xl border bg-card p-6 shadow-sm">
             <h3 className="text-lg font-semibold">문의 남기기</h3>
+
+            {notice && (
+              <div
+                className={`mt-4 rounded-xl border px-3 py-2 text-sm ${
+                  notice.type === "success"
+                    ? "border-green-300 bg-green-50 text-green-700"
+                    : "border-red-300 bg-red-50 text-red-700"
+                }`}
+                role="alert"
+              >
+                {notice.text}
+              </div>
+            )}
+
             <div className="mt-4 space-y-4">
               <div>
-                <label className="text-sm">이름</label>
+                <label htmlFor="name" className="text-sm">이름</label>
                 <input
+                  id="name"
+                  name="name"
                   className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                   placeholder="홍길동"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
                 />
               </div>
+
               <div>
-                <label className="text-sm">이메일</label>
+                <label htmlFor="email" className="text-sm">이메일</label>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
                   className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                   placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
+
               <div>
-                <label className="text-sm">내용</label>
+                <label htmlFor="message" className="text-sm">내용</label>
                 <textarea
+                  id="message"
+                  name="message"
                   rows={5}
                   className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                   placeholder="문의 내용을 입력하세요."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                  minLength={10}
                 />
               </div>
-              <Button type="submit" className="w-full">보내기</Button>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "전송 중..." : "보내기"}
+              </Button>
             </div>
           </form>
         </div>
