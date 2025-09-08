@@ -1,161 +1,206 @@
-// app/components/Header.tsx
-"use client";
-
-import { useRouter } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+// Header.tsx
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import {
   Newspaper,
   TrendingUp,
   Settings,
   LogOut,
   User,
-  Bell,
   UserPlus,
 } from "lucide-react";
 import { NewsFilters } from "./NewsFilters";
+import RealtimeNewsTicker from "./RealtimeNewsTicker";
+import { ThemeToggle } from "./ThemeToggle";
+import { useState, useRef, useEffect } from "react";
 
+// 사용자 정보 타입 정의
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+// 커스텀 드롭다운 컴포넌트
+interface UserDropdownProps {
+  user: User;
+  onProfileClick: () => void;
+  onInterestsClick: () => void;
+  onLogout: () => void;
+}
+
+function UserDropdown({ user, onProfileClick, onInterestsClick, onLogout }: UserDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const handleMenuClick = (action: () => void) => {
+    action();
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-muted transition-colors"
+      >
+        <Avatar className="w-8 h-8">
+          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+            {user.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="text-left min-w-0">
+          <div className="text-sm font-medium truncate">
+            {user.name}
+          </div>
+          <div className="text-xs text-muted-foreground truncate">
+            {user.email}
+          </div>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-md shadow-lg z-50">
+          <div className="px-3 py-2 border-b border-border">
+            <p className="text-sm font-semibold text-card-foreground">내 계정</p>
+          </div>
+          
+          <div className="py-1">
+            <button
+              onClick={() => handleMenuClick(onProfileClick)}
+              className="flex items-center w-full px-3 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+            >
+              <User className="mr-2 h-4 w-4" />
+              프로필
+            </button>
+            
+            <button
+              onClick={() => handleMenuClick(onInterestsClick)}
+              className="flex items-center w-full px-3 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              관심사 설정
+            </button>
+            
+            <hr className="my-1 border-border" />
+
+            <button
+              onClick={() => handleMenuClick(onLogout)}
+              className="flex items-center w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              로그아웃
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 🔹 Header 컴포넌트의 Props 정의 수정
 interface HeaderProps {
+  user: User | null;
+  onLogout: () => void;
+  onLoginClick: () => void;
+  onSignupClick: () => void;
+  onProfileClick: () => void; // 🔹 프로필 클릭 핸들러 prop 추가
+  onInterestsClick: () => void; // 관심사 설정 핸들러 추가
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   onRefresh: () => void;
   isLoading?: boolean;
-  isLoggedIn?: boolean;
-  onSignupClick?: () => void;
+  onHomeClick?: () => void; // 🔹 홈으로 이동 핸들러 추가 (옵션)
 }
 
-// 모의 유저 데이터
-const mockUser = {
-  name: "김철수",
-  email: "kim@example.com",
-  avatar:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80",
-  role: "관리자",
-};
-
 export function Header({
+  user,
+  onLogout,
+  onLoginClick,
+  onSignupClick,
+  onProfileClick, // 🔹 prop 받기
+  onInterestsClick, // 관심사 설정 핸들러 받기
   searchQuery,
   onSearchChange,
   selectedCategory,
   onCategoryChange,
   onRefresh,
   isLoading = false,
-  isLoggedIn = true,
-  onSignupClick,
+  onHomeClick,
 }: HeaderProps) {
-  const router = useRouter();
-
-  const handleLogout = () => {
-    console.log("로그아웃");
-  };
-
-  const handleProfile = () => {
-    console.log("프로필 보기");
-  };
-
-  const handleSettings = () => {
-    console.log("설정");
-  };
-
-  // ✅ 로그인 버튼 → /login 으로 이동
-  const handleLogin = () => {
-    router.push("/login");
-    // 필요하면 다음처럼 리다이렉트 파라미터도 포함 가능:
-    // const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/";
-    // router.push(`/login?next=${encodeURIComponent(next)}`);
-  };
-
-  // (옵션) 회원가입 핸들러가 안 넘어오면 기본적으로 /signup으로 이동
-  const handleSignup = () => {
-    if (onSignupClick) onSignupClick();
-    else router.push("/signup");
-  };
-
   return (
     <header className="border-b bg-card sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
-        {/* Top Navigation */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4 min-w-0">
+            <div
+              className="flex items-center gap-2 shrink-0 cursor-pointer select-none"
+              onClick={onHomeClick}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  onHomeClick?.();
+                }
+              }}
+            >
               <Newspaper className="w-8 h-8 text-primary" />
               <h1>뉴스 크롤러</h1>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground min-w-0">
               <TrendingUp className="w-4 h-4" />
-              <span>실시간 뉴스 모니터링</span>
+              <RealtimeNewsTicker
+                className="ml-2 truncate"
+                refreshMs={60000}
+                rotateMs={4000}
+              />
             </div>
           </div>
 
-          {/* User Section */}
           <div className="flex items-center gap-4">
-            {isLoggedIn ? (
+            <ThemeToggle />
+            {user ? (
               <>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">
-                    3
-                  </span>
+                {/* 직접 로그아웃 버튼 추가 */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLogout}
+                  className="hidden sm:flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="w-4 h-4" />
+                  로그아웃
                 </Button>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2 px-2">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage
-                          src={mockUser.avatar}
-                          alt={mockUser.name}
-                        />
-                        <AvatarFallback>
-                          {mockUser.name.slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="text-left">
-                        <div className="text-sm">{mockUser.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {mockUser.role}
-                        </div>
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleProfile}>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>프로필</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleSettings}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>설정</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-destructive"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>로그아웃</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <UserDropdown 
+                  user={user} 
+                  onProfileClick={onProfileClick}
+                  onInterestsClick={onInterestsClick}
+                  onLogout={onLogout}
+                />
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={handleLogin}>
+                <Button variant="ghost" onClick={onLoginClick}>
                   로그인
                 </Button>
-                <Button onClick={handleSignup}>
+                <Button onClick={onSignupClick}>
                   <UserPlus className="w-4 h-4 mr-2" />
                   회원가입
                 </Button>
@@ -164,7 +209,6 @@ export function Header({
           </div>
         </div>
 
-        {/* Filters */}
         <NewsFilters
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}

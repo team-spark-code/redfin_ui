@@ -42,7 +42,21 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      <Header 
+        user={null}
+        onLogout={() => {}}
+        onLoginClick={() => {}}
+        onSignupClick={() => {}}
+        onProfileClick={() => {}}
+        onInterestsClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+        selectedCategory="all"
+        onCategoryChange={() => {}}
+        onRefresh={() => {}}
+        isLoading={false}
+        onHomeClick={() => {}}
+      />
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-secondary/10 via-background to-accent/10 border-b">

@@ -1,6 +1,5 @@
 // app/api/llm/route.ts
 import { NextResponse } from "next/server";
-import { Agent } from "undici";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,11 +7,6 @@ export const maxDuration = 300;
 
 // 환경변수로도 바꿀 수 있게
 const UPSTREAM = process.env.LLM_UPSTREAM ?? "http://192.168.0.66:8030/redfin_target-insight";
-
-// undici 에이전트: 연결 타임아웃 명시
-const agent = new Agent({
-  connect: { timeout: 5000 }, // TCP connect 타임아웃
-});
 
 export async function POST(req: Request) {
   const started = Date.now();
@@ -34,7 +28,6 @@ export async function POST(req: Request) {
       body: JSON.stringify(payload),
       signal: ac.signal,
       cache: "no-store",
-      dispatcher: agent, // ← undici agent 사용
     });
 
     const text = await r.text();

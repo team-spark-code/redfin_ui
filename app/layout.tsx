@@ -1,6 +1,8 @@
 // app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 export const metadata: Metadata = {
   title: "RedFin – AI News",
@@ -9,8 +11,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
-      <body className="min-h-screen bg-white text-black">{children}</body>
+    <html lang="ko" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground">
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

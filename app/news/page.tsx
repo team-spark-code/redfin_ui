@@ -37,12 +37,18 @@ const PLACEHOLDER_IMG =
   "https://images.unsplash.com/photo-1523742810063-4f61a38b7e1b?w=1200&q=80&auto=format&fit=crop";
 
 async function fetchAllNews(limit = 100) { // ✅ 기본 100
-  const res = await fetch(`/api/news?limit=${limit}`, { cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to fetch /api/news: ${res.status} ${text}`);
+  try {
+    const res = await fetch(`/api/news?limit=${limit}`, { cache: "no-store" });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(errorData.error || `API returned ${res.status}`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error('Failed to fetch news:', error);
+    // 빈 배열 반환하여 앱이 계속 작동하도록 함
+    return [];
   }
-  return res.json();
 }
 
 function normalizeNews(raw: RawNews[]): NewsNormalized[] {

@@ -260,7 +260,7 @@ function DayTimeline({ events, base }: { events: EventItem[]; base: Date }) {
             end: new Date(Math.min(e.end.getTime(), dayEnd.getTime())),
           }))
       ),
-    [events, base]
+    [events, dayStart, dayEnd]
   );
 
   const totalMs = 24 * MS_HOUR;
@@ -470,7 +470,7 @@ function MonthCalendar({ events, base }: { events: EventItem[]; base: Date }) {
               className={[
                 "relative h-32 border rounded-lg p-2 bg-gradient-to-b from-slate-50/70 to-white",
                 !isSameMonth(d) ? "opacity-60" : "",
-                key === today ? "outline outline-2 outline-rose-500 outline-offset-2" : "",
+                key === today ? "outline-2 outline-rose-500 outline-offset-2" : "",
               ].join(" ")}
             >
               <div className="text-xs font-extrabold text-slate-900 mb-1 flex justify-between">
@@ -509,7 +509,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isLoading] = useState(false);
-  const [isLoggedIn] = useState(false);
+  const [user, setUser] = useState<{ id: string; name: string } | null>(null);
 
   const [timeframe, setTimeframe] = useState<Timeframe>("weekly");
   const [cursor, setCursor] = useState<Date>(new Date());
@@ -530,6 +530,14 @@ export default function DashboardPage() {
       .filter((e) => (!q ? true : e.title.toLowerCase().includes(q)));
   }, [all, range, selectedCategory, searchQuery]);
 
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  const handleLoginClick = () => {
+    setUser({ id: "1", name: "John Doe" });
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header
@@ -539,7 +547,11 @@ export default function DashboardPage() {
         onCategoryChange={setSelectedCategory}
         onRefresh={() => setCursor(new Date())}
         isLoading={isLoading}
-        isLoggedIn={isLoggedIn}
+        user={user}
+        onLogout={handleLogout}
+        onLoginClick={handleLoginClick}
+        onProfileClick={() => {}}
+        onInterestsClick={() => {}}
         onSignupClick={() => {}}
       />
 

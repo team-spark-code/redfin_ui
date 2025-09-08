@@ -203,7 +203,6 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // @ts-ignore
     if (e.nativeEvent?.isComposing) return;
     if (e.key === "Enter") handleSearch();
   };
@@ -225,35 +224,34 @@ export function LLMRecommendationSection({ onNewsClick }: LLMRecommendationSecti
     setDislikeCount((p) => (disliked ? p - 1 : p + 1));
   };
 
-const handleShare = (
-  platform: "facebook" | "twitter" | "linkedin" | "email"
-) => {
-  if (typeof window === "undefined") return;
+  const handleShare = (
+    platform: "facebook" | "twitter" | "linkedin" | "email"
+  ) => {
+    if (typeof window === "undefined") return;
 
-  const url = window.location.href;
-  const title = `LLM 뉴스 분석: ${prompt}`;
+    const url = window.location.href;
+    const title = `LLM 뉴스 분석: ${prompt}`;
 
-  const shareUrls = {
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-    email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${title}\n\n${url}`)}`,
-  } as const;
+    const shareUrls = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${title}\n\n${url}`)}`,
+    } as const;
 
-  if (platform === "email") {
-    window.location.href = shareUrls.email;
-  } else {
-    const win = window.open(
-      shareUrls[platform],
-      "_blank",
-      "width=600,height=400"
-    );
-    if (win) {
-      // 옵셔널 체이닝 없이 안전하게 할당
-      win.opener = null;
+    if (platform === "email") {
+      window.location.href = shareUrls.email;
+    } else {
+      const win = window.open(
+        shareUrls[platform],
+        "_blank",
+        "width=600,height=400"
+      );
+      if (win) {
+        win.opener = null;
+      }
     }
-  }
-};
+  };
 
   const handleArticleClick = (articleId: string) => onNewsClick?.(articleId);
 
@@ -289,8 +287,9 @@ const handleShare = (
               ul: (p) => <ul className="list-disc pl-5 space-y-1" {...p} />,
               ol: (p) => <ol className="list-decimal pl-5 space-y-1" {...p} />,
               li: (p) => <li className="leading-relaxed" {...p} />,
-              code: ({ inline, className, children, ...props }) =>
-                inline ? (
+              code: ({ className, children, ...props }) => {
+                const isInline = !className || !className.includes('language-');
+                return isInline ? (
                   <code className="px-1 py-0.5 rounded bg-slate-100 text-[90%]" {...props}>
                     {children}
                   </code>
@@ -298,7 +297,8 @@ const handleShare = (
                   <pre className="rounded-lg bg-slate-950/95 text-slate-50 p-3 overflow-x-auto">
                     <code className={className} {...props}>{children}</code>
                   </pre>
-                ),
+                );
+              },
               blockquote: (p) => (
                 <blockquote
                   className="border-l-4 border-primary/50 bg-primary/5 px-4 py-2 rounded-r-lg text-slate-700"
@@ -461,7 +461,7 @@ const handleShare = (
                   <Sparkles className="w-5 h-5 text-primary" />
                   AI 분석 브리핑
                   <Badge variant="secondary" className="ml-auto">
-                    "{prompt}" 분석 결과
+                    &quot;{prompt}&quot; 분석 결과
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -472,7 +472,7 @@ const handleShare = (
                   </div>
                 )}
 
-                {/* ⬇️ 여기서 마크다운/HTML/텍스트 자동 렌더 */}
+                {/* 마크다운/HTML/텍스트 자동 렌더 */}
                 {renderBody()}
 
                 {/* bullets 있으면 표시 */}

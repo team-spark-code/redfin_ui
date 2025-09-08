@@ -219,6 +219,55 @@
   }
 }
 
+/* 추가 다크 모드 CSS 변수 및 스타일 */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* 다크 모드 전환 애니메이션 */
+* {
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* 스크롤바 다크 모드 스타일 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-md;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground;
+}
+
+/* 다크 모드에서 이미지 조정 */
+.dark img {
+  filter: brightness(0.9);
+}
+
+/* 선택 영역 스타일 */
+::selection {
+  @apply bg-primary text-primary-foreground;
+}
+
+/* 포커스 링 스타일 */
+:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
 /* Root font size */
 html {
   font-size: var(--font-size);
