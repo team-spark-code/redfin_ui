@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
 import { Separator } from "./ui/separator";
 import { Alert, AlertDescription } from "./ui/alert";
-import { ArrowLeft, Mail, Lock, User, Phone, Eye, EyeOff, Github, Chrome } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Phone, Eye, EyeOff, Chrome } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import Image from 'next/image';
 
 interface SignupFormData {
   email: string;
@@ -23,6 +24,17 @@ interface SignupFormData {
 interface SignupPageProps {
   onBack: () => void;
 }
+
+const KakaoIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2C6.486 2 2 5.589 2 10.007c0 2.953 1.904 5.53 4.63 6.91-1.242 2.723-3.833 3.893-3.833 3.893s1.635-.493 3.833-1.947c1.132.343 2.32.537 3.537.537 5.514 0 10-3.589 10-8.007S17.514 2 12 2z" />
+  </svg>
+);
 
 export function SignupPage({ onBack }: SignupPageProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -51,7 +63,7 @@ export function SignupPage({ onBack }: SignupPageProps) {
   };
 
   const handleSocialLogin = (provider: string) => {
-    console.log(`${provider} 로그인`);
+    window.location.href = `/oauth2/authorization/${provider}`;
   };
 
   return (
@@ -100,22 +112,28 @@ export function SignupPage({ onBack }: SignupPageProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Social Login */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
-                onClick={() => handleSocialLogin("Google")}
+                onClick={() => handleSocialLogin("google")}
                 className="w-full"
               >
                 <Chrome className="w-4 h-4 mr-2" />
                 Google
               </Button>
               <Button
-                variant="outline"
-                onClick={() => handleSocialLogin("GitHub")}
-                className="w-full"
+                onClick={() => handleSocialLogin("kakao")}
+                className="w-full bg-[#FEE500] text-black hover:bg-[#FEE500]/90"
               >
-                <Github className="w-4 h-4 mr-2" />
-                GitHub
+                <KakaoIcon className="w-5 h-5 mr-2" />
+                카카오
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleSocialLogin("naver")}
+                className="w-full p-0 h-10"
+              >
+                <Image src="/web_light_rd_ctn@4x.png" alt="네이버로 가입" width={100} height={40} style={{ objectFit: 'contain' }} />
               </Button>
             </div>
 
@@ -306,14 +324,19 @@ export function SignupPage({ onBack }: SignupPageProps) {
                 {isLoading ? "가입 중..." : "회원가입"}
               </Button>
             </form>
-
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4 mt-4">
             <div className="text-center text-sm">
               <span className="text-muted-foreground">이미 계정이 있으신가요? </span>
-              <Button variant="link" className="p-0 h-auto">
+              <Button variant="link" className="p-0 h-auto" onClick={onBack}>
                 로그인
               </Button>
             </div>
-          </CardContent>
+            <Button variant="outline" className="w-full" onClick={onBack}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              뒤로가기
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </div>

@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { FeaturedNewsSection } from "./components/FeaturedNewsSection";
@@ -162,11 +161,9 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [news, setNews] = useState<NewsNormalized[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { user, logout, login: authLogin, isLoading: authLoading } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [rssNews, setRssNews] = useState<NewsNormalized[]>([]);
-
-
 
   // 뉴스 데이터 가져오기 (기존 + RSS)
   useEffect(() => {
@@ -200,6 +197,42 @@ export default function Page() {
     };
   }, []);
 
+  // 실시간 검색을 위한 디바운스 useEffect 추가
+  useEffect(() => {
+    let alive = true;
+    const timeoutId = setTimeout(async () => {
+      if (!searchQuery) return; // 검색어가 없으면 실행하지 않음
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // 검색어가 있을 때 검색 파라미터와 함께 뉴스 가져오기
+        const [articlesRes, rssData] = await Promise.all([
+          fetchNews({ search: searchQuery }),
+          fetchRSSNews(),
+        ]);
+
+        const normalizedArticles = normalizeNews(articlesRes).sort(sortByRecent);
+        const sortedRssNews = rssData.sort(sortByRecent);
+
+        if (alive) {
+          setNews(normalizedArticles);
+          setRssNews(sortedRssNews);
+        }
+      } catch (e: any) {
+        if (alive) setError(e?.message ?? "검색 중 오류가 발생했습니다.");
+      } finally {
+        if (alive) setIsLoading(false);
+      }
+    }, 500); // 500ms 디바운스
+
+    return () => {
+      alive = false;
+      clearTimeout(timeoutId);
+    };
+  }, [searchQuery]); // searchQuery가 변경될 때마다 실행
+
   // FeaturedLoadingSkeleton 컴포넌트 정의
   const FeaturedLoadingSkeleton = () => (
     <section className="bg-gradient-to-br from-primary/5 to-secondary/10 border-b">
@@ -229,7 +262,7 @@ export default function Page() {
       setIsLoading(true);
       const rssData = await fetchRSSNews();
       setRssNews(rssData.sort(sortByRecent));
-    } catch (e: any) {
+    } catch (error) {
       setError("RSS 새로고침 실패");
     } finally {
       setIsLoading(false);
@@ -253,8 +286,8 @@ export default function Page() {
 
         setNews(normalizedArticles);
         setRssNews(sortedRssNews);
-      } catch (e: any) {
-        setError(e?.message ?? "새로고침 실패");
+      } catch (error) {
+        setError(error?.message ?? "새로고침 실패");
       } finally {
         setIsLoading(false);
       }
@@ -269,10 +302,6 @@ export default function Page() {
   // 검색 및 필터링 함수들
   const textOf = (n: NewsNormalized) =>
     `${n.title} ${n.description} ${n.source} ${n.tags.join(" ")}`.toLowerCase();
-  const passesSearch = (n: NewsNormalized) =>
-    !searchQuery || textOf(n).includes(searchQuery.toLowerCase());
-  const passesCategory = (n: NewsNormalized) =>
-    selectedCategory === "all" || n.category === selectedCategory;
 
   // 검색 및 필터링을 allNews에 적용
   const filteredNews = useMemo(() => {
@@ -283,7 +312,44 @@ export default function Page() {
     });
   }, [allNews, searchQuery, selectedCategory]);
 
-  const featuredNews = useMemo(() => filteredNews.slice(0, 3), [filteredNews]);
+  // 미국/영국 언론사 판별 함수 (더 정확한 필터링)
+  const isUSUKNews = (n: NewsNormalized) => {
+    if (!n.sourceUrl) return false;
+    try {
+      const url = new URL(n.sourceUrl);
+      const usukDomains = [
+        // 미국 주요 언론사
+        'wsj.com', 'wired.com', 'techcrunch.com', 'cnn.com', 'npr.org',
+        'theverge.com', 'technologyreview.com', 'nytimes.com', 'washingtonpost.com',
+        'bloomberg.com', 'reuters.com', 'associated-press.org', 'time.com',
+        // 영국 주요 언론사
+        'bbc.co.uk', 'theguardian.com', 'ft.com', 'independent.co.uk',
+        'telegraph.co.uk', 'economist.com', 'sky.com'
+      ];
+      return usukDomains.some(domain => url.hostname.includes(domain));
+    } catch {
+      return false;
+    }
+  };
+
+  // AI 관련 키워드 체크 함수
+  const isAIRelated = (n: NewsNormalized) => {
+    const aiKeywords = [
+      'ai', 'artificial intelligence', '인공지능', 'machine learning', '머신러닝',
+      'deep learning', '딥러닝', 'chatgpt', 'gpt', 'openai', 'neural network',
+      '신경망', 'llm', 'large language model', 'generative ai', '생성형ai',
+      'automation', 'robotics', 'computer vision', 'nlp', 'algorithm'
+    ];
+    const text = `${n.title} ${n.description} ${n.tags.join(' ')}`.toLowerCase();
+    return aiKeywords.some(keyword => text.includes(keyword));
+  };
+
+  // featuredNews: 미국/영국 언론사의 최신 AI 뉴스만 추출
+  const featuredNews = useMemo(() => {
+    return filteredNews
+      .filter(n => isUSUKNews(n) && isAIRelated(n))
+      .slice(0, 3);
+  }, [filteredNews]);
 
   if (authLoading) {
     return (
@@ -309,21 +375,6 @@ export default function Page() {
     logout();
   };
 
-  // 로그인 성공 핸들러 추가
-  const handleLoginSuccess = (userData: any) => {
-    console.log('메인 페이지에서 로그인 성공 처리:', userData);
-
-    // localStorage에서 토큰 가져오기
-    const token = localStorage.getItem('auth_token');
-
-    if (token && userData) {
-      // AuthContext의 login 함수 호출
-      authLogin(token, userData);
-      console.log('AuthContext login 함수 호출 완료');
-    } else {
-      console.error('토큰 또는 사용자 데이터가 없음');
-    }
-  };
 
   const handleProfileClick = () => {
     // 프로필 페이지로 이동
@@ -375,8 +426,9 @@ export default function Page() {
             <button
               onClick={handleRefresh}
               className="ml-2 underline hover:no-underline"
-            ></button>
-              ��시 시도
+            >
+              다시 시도
+            </button>
           </div>
         </div>
       )}
@@ -390,7 +442,7 @@ export default function Page() {
             className="hover:text-foreground transition-colors"
             disabled={isLoading}
           >
-            AI RSS 새로고침
+            RSS 새로고침
           </button>
         </div>
       </div>

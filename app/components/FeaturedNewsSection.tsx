@@ -43,7 +43,7 @@ export function FeaturedNewsSection({ featuredNews, onNewsClick }: { featuredNew
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold">핵심 뉴스</h2>
-          <Link href="/news" className="text-sm text-primary hover:underline">
+          <Link href="/featured-news" className="text-sm text-primary hover:underline">
             전체 보기 →
           </Link>
         </div>
